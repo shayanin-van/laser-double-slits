@@ -3,10 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Mitr"
+    />
     <title>Laser Double Slits</title>
     <style>
       body {
-        font-family: sans-serif;
+        font-family: "Mitr", sans-serif;
+        color: rgb(114, 114, 114);
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -15,17 +20,19 @@
         margin: 0;
       }
       #myCanvas {
-        border: 1px solid #7f7f7f;
-        background-color: #ffffff;
+        border: 0px;
+        background-color: #f7fcff;
         width: 90%;
         max-width: 360px;
         aspect-ratio: 0.7;
+        margin-bottom: 20px;
       }
     </style>
   </head>
   <body>
     <canvas id="myCanvas"></canvas>
-    <div>
+    <div style="display: flex; flex-direction: column; align-items: center">
+      <label for="slitD">ระยะระหว่างช่องสลิต</label>
       <input
         type="range"
         id="slitD"
@@ -35,31 +42,30 @@
         value="2.5"
         step="0.1"
       />
-      <label for="slitD">slit spacing</label>
     </div>
-    <div>
+    <div style="display: flex; flex-direction: column; align-items: center">
+      <label for="freq">ความถี่แสง</label>
       <input
         type="range"
         id="freq"
         name="freq"
         min="1.5"
         max="3"
-        value="2"
+        value="1.7"
         step="0.01"
       />
-      <label for="freq">frequency</label>
     </div>
-    <div>
+    <div style="display: flex; flex-direction: column; align-items: center">
+      <label for="screenDistance">ระยะระหว่างฉากกับสลิต</label>
       <input
         type="range"
         id="screenDistance"
         name="screenDistance"
-        min="3.0"
-        max="7.0"
-        value="5.0"
+        min="4.0"
+        max="7.9"
+        value="6.0"
         step="0.1"
       />
-      <label for="screenDistance">screen distance</label>
     </div>
 
     <script>
@@ -141,9 +147,10 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         drawInWave(); // incoming wave
+        drawBottomScreen();
         drawOutWave(); // outgoing wave
         drawSlit();
-        drawScreen();
+        drawTopScreen();
       }
 
       function drawSlit() {
@@ -229,9 +236,9 @@
         }
       }
 
-      function drawScreen() {
-        // draw white area
-        ctx.fillStyle = "white";
+      function drawTopScreen() {
+        // draw empty area
+        ctx.fillStyle = "#F7F7F7";
         ctx.beginPath();
         ctx.rect(
           0,
@@ -246,9 +253,9 @@
         ctx.beginPath();
         ctx.rect(
           0,
-          yCon(slitYPos + Number(screenDistance) + 1.4) * ppcm,
+          Math.ceil(yCon(slitYPos + Number(screenDistance) + 0.7) * ppcm),
           phyWidth * ppcm,
-          1.4 * ppcm
+          Math.ceil(0.72 * ppcm)
         );
         ctx.fill();
 
@@ -257,18 +264,60 @@
         for (let i = 0; i < resolution; i++) {
           // get x coordinate
           const x = -phyWidth / 2 + (i * phyWidth) / resolution;
-          const theta = Math.atan2(x, screenDistance);
-          const intensity =
-            Math.cos((Math.PI * slitD * Math.sin(theta)) / lambda) ** 2;
+
+          // find intensity
+          const path1 = Math.sqrt((x + slitD / 2) ** 2 + screenDistance ** 2);
+          const path2 = Math.sqrt((x - slitD / 2) ** 2 + screenDistance ** 2);
+          const pathDiff = Math.abs(path1 - path2);
+          const phaseDiff = 2 * Math.PI * (pathDiff / lambda);
+          const intensity = Math.cos(phaseDiff / 2) ** 2;
           const alphaHex = Math.round(intensity * 255).toString(16);
 
           ctx.fillStyle = frequencyToColor(freq) + alphaHex;
           ctx.beginPath();
           ctx.rect(
             xCon(x) * ppcm,
-            yCon(slitYPos + Number(screenDistance) + 1.4) * ppcm,
-            (phyWidth / resolution) * ppcm,
-            1.4 * ppcm
+            Math.ceil(yCon(slitYPos + Number(screenDistance) + 0.7) * ppcm),
+            1,
+            Math.ceil(0.72 * ppcm)
+          );
+          ctx.fill();
+        }
+      }
+
+      function drawBottomScreen() {
+        // draw fringes BG
+        ctx.fillStyle = "black";
+        ctx.beginPath();
+        ctx.rect(
+          0,
+          yCon(slitYPos + Number(screenDistance)) * ppcm,
+          phyWidth * ppcm,
+          0.7 * ppcm
+        );
+        ctx.fill();
+
+        // draw fringes
+        const resolution = canvas.width;
+        for (let i = 0; i < resolution; i++) {
+          // get x coordinate
+          const x = -phyWidth / 2 + (i * phyWidth) / resolution;
+
+          // find intensity
+          const path1 = Math.sqrt((x + slitD / 2) ** 2 + screenDistance ** 2);
+          const path2 = Math.sqrt((x - slitD / 2) ** 2 + screenDistance ** 2);
+          const pathDiff = Math.abs(path1 - path2);
+          const phaseDiff = 2 * Math.PI * (pathDiff / lambda);
+          const intensity = Math.cos(phaseDiff / 2) ** 2;
+          const alphaHex = Math.round(intensity * 255).toString(16);
+
+          ctx.fillStyle = frequencyToColor(freq) + alphaHex;
+          ctx.beginPath();
+          ctx.rect(
+            xCon(x) * ppcm,
+            yCon(slitYPos + Number(screenDistance)) * ppcm,
+            1,
+            0.7 * ppcm
           );
           ctx.fill();
         }
